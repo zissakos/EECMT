@@ -1,5 +1,3 @@
-.hg
-.hgignore
 Debug/
 Release/
 *.suo

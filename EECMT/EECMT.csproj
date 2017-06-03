@@ -98,9 +98,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="forum post\EECMT post.txt" />
-    <Content Include="forum post\EECMT.jpg" />
-    <Content Include="forum post\EECMT.png" />
     <Content Include="readme.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
