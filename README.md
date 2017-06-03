@@ -9,9 +9,9 @@ VIDEO: http://www.youtube.com/watch?v=lXR386xL3I8
 ![Screenshot](https://rawgit.com/zissakos/EECMT/master/EECMT.png)
 
 ## INSTALLATION
-Run the tool from anywhere. Check the EECMT.ini if it contains a section for your game. 
-The tool currently supports Dirt 1-3, Dirt Rally, Grid 2, Grid Autosport (these are the games I have).
-Just copy a section of another game, name it accordingly (name does not matter) and modify it (basically the executable name).
+You can either run the tool from anywhere and chose the game folder with the button "Change" (or paste it and hit "Reload")
+OR you can copy all files inside a game folder and start the tool, then it will try to autodetect the game (by searching for all the exe files difined in EECMT.ini).
+Check the EECMT.ini if it contains a section for your game. The tool currently supports Dirt 1-3, Dirt Rally, Grid 2, Grid Autosport (these are the games I have).Just copy a section of another game, name it accordingly (name does not matter) and modify it (basically the executable name). 
 Also, the car names can optionally be defined in EECMT_cars.ini. 
 
 ## USAGE
