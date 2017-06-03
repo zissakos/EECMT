@@ -6,6 +6,8 @@ You can backup and restore all the camera files, and even easily package them fo
 
 VIDEO: http://www.youtube.com/watch?v=lXR386xL3I8
 
+![Screenshot](https://rawgit.com/zissakos/EECMT/master/EECMT.png)
+
 ## INSTALLATION
 Run the tool from anywhere. Check the EECMT.ini if it contains a section for your game. 
 The tool currently supports Dirt 1-3, Dirt Rally, Grid 2, Grid Autosport (these are the games I have).
