@@ -81,4 +81,5 @@ Add a readme file, zip the whole thing and publish it.
 
 VERSION HISTORY
 ===============
-v1.0 2017-04-18 
+1.0 2017-04-18 
+    * initial version
