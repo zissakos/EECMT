@@ -5,16 +5,17 @@ using System.IO;
 using System.Xml;
 using System.Globalization;
 using System.Diagnostics;
+using VictorBush.Ego.NefsLib;
 
 namespace DirtCameraMod
 {
     public partial class Form1 : Form
     {
-        const string CAMMOD_INI_FILENAME = "EECMT.ini";
-        const string CARS_INI_FILENAME = "EECMT_cars.ini";
+        const string EECMT_INI_FILENAME = "EECMT.ini";
+        const string EECMT_CARS_INI_FILENAME = "EECMT_cars.ini";
         const string WINDOW_TITLE = "EECMT - Ego Engine Camera Modding Tool V1.0";
 
-        INIFile cammod_ini;
+        INIFile eecmtINI;
         INIFile cars_ini;
 
         string GameName;
@@ -39,8 +40,8 @@ namespace DirtCameraMod
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            cammod_ini = new INIFile(CAMMOD_INI_FILENAME);
-            cars_ini = new INIFile(CARS_INI_FILENAME);
+            eecmtINI = new INIFile(EECMT_INI_FILENAME);
+            cars_ini = new INIFile(EECMT_CARS_INI_FILENAME);
             InitVariables(Application.StartupPath);
         }
 
@@ -55,21 +56,35 @@ namespace DirtCameraMod
             if (GameName != null)
             {
                 PathToGame = gamepath;
-                SubPathToCars = cammod_ini.GetParameterValue(GameName, "carfolder");
+                SubPathToCars = eecmtINI.GetParameterValue(GameName, "carfolder");
                 PathToCars = PathToGame + "\\" + SubPathToCars;
-                CameraFilename = cammod_ini.GetParameterValue(GameName, "filename");
-                BinaryXML = cammod_ini.GetParameterValueBool(GameName, "binaryXML");
+                CameraFilename = eecmtINI.GetParameterValue(GameName, "filename");
+                BinaryXML = eecmtINI.GetParameterValueBool(GameName, "binaryXML");
 
                 
                 if (BinaryXML)
                 {
-                    string pathToBinXMLConverter = cammod_ini.GetParameterValue("DEFAULT", "binaryXMLConverter");
+                    string pathToBinXMLConverter = eecmtINI.GetParameterValue("DEFAULT", "binaryXMLConverter");
                     if (!File.Exists(pathToBinXMLConverter))
                     {
-                        MessageBox.Show("The game uses binaryXML, but the binXML Converter specified in the ini file '" + CAMMOD_INI_FILENAME +
+                        MessageBox.Show("The game uses binaryXML, but the binXML Converter specified in the ini file '" + EECMT_INI_FILENAME +
                             "' does not exist ('" + pathToBinXMLConverter + "'). Without it you won't be able to mod the camera files.");
                         return;
                     }
+                }
+
+
+                if (GameName == "DIRTRALLY2")
+                {
+                    if (!Directory.Exists(PathToCars))
+                    {
+                        MessageBox.Show("This is Dirt Rally 2.0. EECMT will now extract all cameras.xml files" +
+                            " from the NEFS files and put them in a subfolder cars/models/{car}.");
+                        extractNEFS();
+                    }
+
+
+
                 }
 
                 tbGameLocation.Text = PathToGame;
@@ -89,6 +104,41 @@ namespace DirtCameraMod
             }
         }
 
+        void extractNEFS()
+        {
+            NefsProgressInfo _progressInfo = new NefsProgressInfo();
+            _progressInfo.Progress = new Progress<NefsProgress>();
+
+            DirectoryInfo di = new DirectoryInfo(PathToGame + "\\cars");
+            foreach (FileInfo fi in di.GetFiles("*.nefs"))
+            {
+                try
+                {
+                    NefsArchive archive = new NefsArchive(fi.FullName, _progressInfo);
+                    NefsItem item = archive.GetItem(13);
+                    string car3 = fi.Name.Replace(fi.Extension, "");
+                    FileInfo fi2 = new FileInfo(PathToCars + "\\" + car3 + "\\" + item.Filename);
+                    item.Extract(fi2.FullName, _progressInfo);
+
+                }
+                catch (Exception)
+                {
+                }
+            }
+        }
+
+
+        void putCameraFileBackToNEFS(string car3)
+        {
+            NefsProgressInfo _progressInfo = new NefsProgressInfo();
+            _progressInfo.Progress = new Progress<NefsProgress>();
+
+            NefsArchive archive = new NefsArchive(PathToGame + "\\cars\\" + car3 + ".nefs", _progressInfo);
+            NefsItem item = archive.GetItem(13);
+            item.Inject(getPathToCameraFile(car3), _progressInfo);
+            archive.Save(archive.FilePath, _progressInfo);
+        }
+
         //only return true if ALL vehicles have a backup of their camera file
         bool BackupExists()
         {
@@ -105,9 +155,9 @@ namespace DirtCameraMod
         string FindGameName(string pathToGame)
         {
             string result = null;
-            foreach (string game in cammod_ini.GetSections())
+            foreach (string game in eecmtINI.GetSections())
             {
-                string executable = cammod_ini.GetParameterValue(game, "executable");
+                string executable = eecmtINI.GetParameterValue(game, "executable");
                 if (executable == null) continue;
                 if (File.Exists(pathToGame + "\\" + executable)) result = game;
             }
@@ -182,7 +232,7 @@ namespace DirtCameraMod
                         string paramname = node.Attributes.GetNamedItem("name").Value;
                         if (!CameraParametersVector3.Contains(paramname)) CameraParametersVector3.Add(paramname);
                         string existingvalue = "(" + node.Attributes.GetNamedItem("x").Value + ", " +
-                            node.Attributes.GetNamedItem("x").Value + ", " +
+                            node.Attributes.GetNamedItem("y").Value + ", " +
                             node.Attributes.GetNamedItem("z").Value + ")";
                         AddExistingValue(paramname, existingvalue);
                     }
@@ -261,8 +311,8 @@ namespace DirtCameraMod
 
         void ConvertBinXMLToPlainXML(string inputfile, string outputfile)
         {
-            string pathToBinXMLConverter = cammod_ini.GetParameterValue("DEFAULT", "binaryXMLConverter");
-            string commandLine = cammod_ini.GetParameterValue("DEFAULT", "commandLineBinXML2PlainXML");
+            string pathToBinXMLConverter = eecmtINI.GetParameterValue("DEFAULT", "binaryXMLConverter");
+            string commandLine = eecmtINI.GetParameterValue("DEFAULT", "commandLineBinXML2PlainXML");
             FileInfo fi = new FileInfo(pathToBinXMLConverter);
             ProcessStartInfo psi = new ProcessStartInfo();
             //psi.WorkingDirectory = new FileInfo(inputfile).DirectoryName;
@@ -276,8 +326,8 @@ namespace DirtCameraMod
 
         void ConvertPlainXMLToBinXML(string inputfile, string outputfile)
         {
-            string pathToBinXMLConverter = cammod_ini.GetParameterValue("DEFAULT", "binaryXMLConverter");
-            string commandLine = cammod_ini.GetParameterValue("DEFAULT", "commandLinePlainXML2BinXML");
+            string pathToBinXMLConverter = eecmtINI.GetParameterValue("DEFAULT", "binaryXMLConverter");
+            string commandLine = eecmtINI.GetParameterValue("DEFAULT", "commandLinePlainXML2BinXML");
             FileInfo fi = new FileInfo(pathToBinXMLConverter);
             ProcessStartInfo psi = new ProcessStartInfo();
             //psi.WorkingDirectory = new FileInfo(inputfile).DirectoryName;
@@ -303,6 +353,11 @@ namespace DirtCameraMod
                 Single oldvalue = Convert.ToSingle(old, new CultureInfo("en-US"));
                 Single delta = Convert.ToSingle(cell_content, new CultureInfo("en-US"));
                 result = oldvalue + delta;
+            }
+            else if (cell_content.StartsWith("$"))
+            {
+                cell_content = cell_content.Remove(0, 1);
+                result = Convert.ToSingle(cell_content, new CultureInfo("en-US"));
             }
             else
             {
@@ -347,7 +402,7 @@ namespace DirtCameraMod
         private void btReload_Click(object sender, EventArgs e)
         {
             InitVariables(tbGameLocation.Text);
-            if (GameName == null) MessageBox.Show("The game in the chosen folder could not be identified. Please check the folder and the ini file '" + CAMMOD_INI_FILENAME + "' for a corresponding section with the game's executable file.");
+            if (GameName == null) MessageBox.Show("The game in the chosen folder could not be identified. Please check the folder and the ini file '" + EECMT_INI_FILENAME + "' for a corresponding section with the game's executable file.");
         }
 
         private void btApply_Click(object sender, EventArgs e)
@@ -466,6 +521,8 @@ namespace DirtCameraMod
                 w.Close();
 
                 if (BinaryXML) ConvertPlainXMLToBinXML(filename, getPathToCameraFile(car3));
+
+                if (GameName == "DIRTRALLY2") putCameraFileBackToNEFS(car3);
             }
             rform.lbMessage.Text = "There were " + numChanges + " changes in " + numFiles + " file(s).";
             rform.ShowDialog();
@@ -560,6 +617,7 @@ namespace DirtCameraMod
                 string filename = getPathToCameraFile(CarName);
                 FileInfo fi = new FileInfo(getBackupFilename(filename));
                 fi.CopyTo(filename, true);
+                if (GameName == "DIRTRALLY2") putCameraFileBackToNEFS(CarName);
                 numFiles++;
             }
             MessageBox.Show("Successfully restored " + numFiles + " files.");
@@ -575,7 +633,7 @@ namespace DirtCameraMod
 
         private void btStartGame_Click(object sender, EventArgs e)
         {
-            string executable = PathToGame + "\\" + cammod_ini.GetParameterValue(GameName, "executable");
+            string executable = PathToGame + "\\" + eecmtINI.GetParameterValue(GameName, "executable");
             if (!File.Exists(executable))
             {
                 MessageBox.Show("Game executable '" + executable + "' could not be found!");
