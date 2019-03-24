@@ -13,7 +13,7 @@ namespace DirtCameraMod
     {
         const string EECMT_INI_FILENAME = "EECMT.ini";
         const string EECMT_CARS_INI_FILENAME = "EECMT_cars.ini";
-        const string WINDOW_TITLE = "EECMT - Ego Engine Camera Modding Tool V1.0";
+        const string WINDOW_TITLE = "EECMT - Ego Engine Camera Modding Tool V1.0.2";
 
         INIFile eecmtINI;
         INIFile cars_ini;
@@ -76,7 +76,11 @@ namespace DirtCameraMod
 
                 if (GameName == "DIRTRALLY2")
                 {
-                    if (!Directory.Exists(PathToCars))
+                    DirectoryInfo di = new DirectoryInfo(PathToCars);
+                    DirectoryInfo[] dirs = di.GetDirectories();
+
+
+                    if (dirs.Length < 50)
                     {
                         MessageBox.Show("This is Dirt Rally 2.0. EECMT will now extract all cameras.xml files" +
                             " from the NEFS files and put them in a subfolder cars/models/{car}.");
@@ -109,7 +113,7 @@ namespace DirtCameraMod
             NefsProgressInfo _progressInfo = new NefsProgressInfo();
             _progressInfo.Progress = new Progress<NefsProgress>();
 
-            DirectoryInfo di = new DirectoryInfo(PathToGame + "\\cars");
+            DirectoryInfo di = new DirectoryInfo(PathToCars);
             foreach (FileInfo fi in di.GetFiles("*.nefs"))
             {
                 try
@@ -117,26 +121,15 @@ namespace DirtCameraMod
                     NefsArchive archive = new NefsArchive(fi.FullName, _progressInfo);
                     NefsItem item = archive.GetItem(13);
                     string car3 = fi.Name.Replace(fi.Extension, "");
-                    FileInfo fi2 = new FileInfo(PathToCars + "\\" + car3 + "\\" + item.Filename);
+                    FileInfo fi2 = new FileInfo(PathToCars + "\\" + car3 + "\\" + item.Filename+".bin.xml");
                     item.Extract(fi2.FullName, _progressInfo);
-
+                    string filename = PathToCars + "\\" + car3 + "\\" + item.Filename;
+                    ConvertBinXMLToPlainXML(fi2.FullName, filename);
                 }
                 catch (Exception)
                 {
                 }
             }
-        }
-
-
-        void putCameraFileBackToNEFS(string car3)
-        {
-            NefsProgressInfo _progressInfo = new NefsProgressInfo();
-            _progressInfo.Progress = new Progress<NefsProgress>();
-
-            NefsArchive archive = new NefsArchive(PathToGame + "\\cars\\" + car3 + ".nefs", _progressInfo);
-            NefsItem item = archive.GetItem(13);
-            item.Inject(getPathToCameraFile(car3), _progressInfo);
-            archive.Save(archive.FilePath, _progressInfo);
         }
 
         //only return true if ALL vehicles have a backup of their camera file
@@ -522,7 +515,6 @@ namespace DirtCameraMod
 
                 if (BinaryXML) ConvertPlainXMLToBinXML(filename, getPathToCameraFile(car3));
 
-                if (GameName == "DIRTRALLY2") putCameraFileBackToNEFS(car3);
             }
             rform.lbMessage.Text = "There were " + numChanges + " changes in " + numFiles + " file(s).";
             rform.ShowDialog();
@@ -617,7 +609,6 @@ namespace DirtCameraMod
                 string filename = getPathToCameraFile(CarName);
                 FileInfo fi = new FileInfo(getBackupFilename(filename));
                 fi.CopyTo(filename, true);
-                if (GameName == "DIRTRALLY2") putCameraFileBackToNEFS(CarName);
                 numFiles++;
             }
             MessageBox.Show("Successfully restored " + numFiles + " files.");

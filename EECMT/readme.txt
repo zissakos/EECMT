@@ -84,5 +84,15 @@ Add a readme file, zip the whole thing and publish it.
 
 VERSION HISTORY
 ===============
-1.0 2017-04-18 
-    * initial version
+1.0.2  2019-03-24
+        * DR2.0 Patch v1.2 added the ability to use cameras.xml files outside of the NEFS
+		  so now this tool just extracts the cameras.xml files (and converts them to plain XML) 
+		  into subfolders of /cars/ and the games uses them directly.
+		  Since there is no necessity to convert back to binary XML, the parameter
+		  binaryXML has been set to false in EECMT.ini
+
+1.0.1  2019-03-04
+        * added compatibility for Dirt Rally 2.0
+        
+1.0    2017-04-18 
+        * initial version
